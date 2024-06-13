@@ -2,13 +2,16 @@ import env
 from env import HighRiseFireEnv
 
 
-def protocol_alignment_prediction(policy, discount_factor, max_steps, max_iterations):
+def protocol_alignment_prediction(policy, discount_factor, max_steps, max_iterations, avg=False):
 
     Alignment_Value_1 = 0
     Alignment_Value_2 = 0
 
+    if avg:
+        discount_factor = 1.0
+
     for _ in range(max_iterations):
-        _, returns_1, returns_2 = example_execution(policy, None, max_steps=max_steps, discount_factor=discount_factor, verbose=False, store_all_together=True)
+        _, returns_1, returns_2 = example_execution(policy, None, max_steps=max_steps, discount_factor=discount_factor, verbose=False, store_all_together=True, avg=avg)
 
         Alignment_Value_1 += returns_1
         Alignment_Value_2 += returns_2
@@ -16,7 +19,7 @@ def protocol_alignment_prediction(policy, discount_factor, max_steps, max_iterat
     return Alignment_Value_1 / max_iterations, Alignment_Value_2 / max_iterations
 
 
-def example_execution(policy, q,max_steps=100, discount_factor=1.0, show_q=False,verbose=True, store_all_together=False):
+def example_execution(policy, q,max_steps=100, discount_factor=1.0, avg=False, show_q=False,verbose=True, store_all_together=False):
     """
 
     Simulation of the environment without learning. The L Agent moves according to the parameter policy provided.
@@ -38,6 +41,9 @@ def example_execution(policy, q,max_steps=100, discount_factor=1.0, show_q=False
     R_1 = 0
 
     steps = 0
+
+    if avg:
+        discount_factor = 1.0
 
     current_discount_factor = 1.0
 
@@ -84,12 +90,16 @@ def example_execution(policy, q,max_steps=100, discount_factor=1.0, show_q=False
     state_list.append(scalar_state)
     transitions_list.append(scalar_state)
 
+    if avg:
+        R_0 /= steps
+        R_1 /= steps
+
     if verbose:
         state_part = ""
         for i in range(len(state)):
             state_part += env.states[i] + ": " + str(state[i]) + ". "
         print(state_part)
-        print("Final returns obtained : ", R_0, R_1)
+    print("Final returns obtained : ", 0.3*R_0, R_1)
 
     if store_all_together:
         return transitions_list, R_0, R_1
@@ -101,7 +111,7 @@ if __name__ == "__main__":
 
     import numpy as np
 
-    policy = np.load("Protocols/protocol_43.npy")
+    policy = np.load("pareto_policy.npy")
 
     print("-------------------")
     print("We Proceed to show the learnt policy.")

@@ -22,7 +22,7 @@ class HighRiseFireEnv(gym.Env):
         """
         1. Floor Level (Low, Medium, High): Represents different segments of the high-rise building.
         2. Fire Intensity (None, Low, Moderate, High, Severe): Indicates the severity of the fire at the current state.
-        3. Occupancy (1 to 5): Indicates whether the area is sparsely or densely populated.
+        3. Occupancy (0 to 4): Indicates whether the area is sparsely or densely populated.
         4. Equipment Readiness (Not Ready, Ready): Reflects the availability and readiness of necessary firefighting equipment.
         5. Visibility (Poor, Good): Represents the environmental condition affecting firefighting efforts.
         6. Firefighter condition (Perfect health, Slightly Injured, Moderately Injured, incapacitated) 
@@ -122,9 +122,9 @@ class HighRiseFireEnv(gym.Env):
                 if fire_intensity == 5:
                     equipment = 0
 
-            elif fire_intensity >= 1:
-                if not equipment:
-                    medical_condition = max(0, medical_condition - 1)
+            #elif fire_intensity >= 1:
+            #    if not equipment:
+            #        medical_condition = max(0, medical_condition - 1)
 
             fire_intensity = max(0, fire_intensity - 2)
 
@@ -136,6 +136,8 @@ class HighRiseFireEnv(gym.Env):
             floor = max(0, floor - 1)
         elif action == ACTION_GO_UPSTAIRS: # Go upstairs
             floor = min(0, floor + 1)
+        else:
+            print("Warning, incorrect action specified!!!")
 
         return np.array([floor, fire_intensity, occupancy, equipment, visibility, medical_condition])
 
@@ -146,39 +148,39 @@ class HighRiseFireEnv(gym.Env):
 
         # Rewards based on action and state transition
         if action == ACTION_EVACUATE_OCCUPANTS:  # Evacuate Occupants
-            professionalism_reward = max(0, 10-2*state[STATE_FIRE_INTENSITY]-state[STATE_VISIBILITY])
-            proximity_reward = 10
+            professionalism_reward = max(0, 1-0.2*state[STATE_FIRE_INTENSITY]-0.1*state[STATE_VISIBILITY])
+            proximity_reward = 1.0
 
             if state[STATE_OCCUPANCY] == 0:
-                professionalism_reward = -100
-                proximity_reward = -100
+                professionalism_reward = -1.0
+                proximity_reward = -1.0
 
         elif action == ACTION_CONTAIN_FIRE:  # Contain Fire
-            professionalism_reward = 8
-            proximity_reward = 2
+            professionalism_reward = 0.8
+            proximity_reward = 0.2
 
             if state[STATE_FIRE_INTENSITY] == 0:
-                professionalism_reward = -100
-                proximity_reward = -100
+                professionalism_reward = -1
+                proximity_reward = -1
 
         elif action == ACTION_AGGRESSIVE_FIRE_SUPPRESSION:  # Aggressive Fire Suppression
-            professionalism_reward = 3 if state[STATE_EQUIPMENT] == 0 else 6  # Less if equipment degraded
-            proximity_reward = 5
+            professionalism_reward = 0.3 if state[STATE_EQUIPMENT] == 0 else 0.6  # Less if equipment degraded
+            proximity_reward = 0.5
 
             if state[STATE_FIRE_INTENSITY] == 0:
-                professionalism_reward = -100
-                proximity_reward = -100
+                professionalism_reward = -1.0
+                proximity_reward = -1.0
 
         elif action == ACTION_COORDINATE_WITH_OTHER_AGENCIES:  # Coordinate with Other Agencies
-            professionalism_reward = 5 if state[STATE_EQUIPMENT] == 0 else 0
-            proximity_reward = 1
+            professionalism_reward = 0.5 if state[STATE_EQUIPMENT] == 0 else -1
+            proximity_reward = -0.1 if state[STATE_EQUIPMENT] == 0 else -1
         elif action == ACTION_ASSESS_AND_PLAN:  # Assess and Plan
-            professionalism_reward = 10 if state[STATE_VISIBILITY] == 0 else 0
-            proximity_reward = 0
+            professionalism_reward = 1.0 if state[STATE_VISIBILITY] == 0 else -1.0
+            proximity_reward = -0.5 if state[STATE_EQUIPMENT] == 0 else -1.0
 
         if next_state[STATE_MEDICAL] == 0:
-            professionalism_reward = -100
-            proximity_reward = -100
+            professionalism_reward = -1.0
+            proximity_reward = -1.0
 
         return [professionalism_reward, proximity_reward]
 
